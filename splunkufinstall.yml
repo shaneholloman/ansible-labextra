@@ -1,6 +1,5 @@
 - name: Install Splunk Universal Forwarder
   hosts: "{{ vm_name | default('all') }}"
-  become: true
 
   roles:
     - splunk_uf_install
