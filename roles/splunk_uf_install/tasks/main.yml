@@ -19,6 +19,14 @@
     home: "{{ splunk_home }}"
     shell: /bin/bash
 
+- name: Set ownership of Splunk home directory
+  ansible.builtin.file:
+    path: "{{ splunk_home }}"
+    owner: "{{ splunk_user }}"
+    group: "{{ splunk_user }}"
+    recurse: true
+    state: directory
+
 - name: Check if Splunk has been started before
   ansible.builtin.stat:
     path: "{{ splunk_home }}/etc/auth/splunk.secret"
