@@ -1,0 +1,21 @@
+---
+splunk_version: "10.2.3"
+splunk_build: "4d61cf8a5c0c"
+splunk_base_url: "https://download.splunk.com/products/universalforwarder/releases"
+splunk_download_url: >-
+  {{ splunk_base_url }}/{{ splunk_version }}/linux/splunkforwarder-{{ splunk_version }}-{{ splunk_build }}.x86_64.rpm
+splunk_home: "/opt/splunkforwarder"
+splunk_user: "splunk"
+# REQUIRED: Set your Splunk indexer/forwarder server
+splunk_forward_server: "example.host.com:9997"
+# Index name for logs
+splunk_index: "rhellogs"
+# Log monitoring configuration
+splunk_monitor_logs:
+  - path: /var/log/secure
+    sourcetype: linux_secure
+  # Uncomment to add more log sources:
+  # - path: /var/log/messages
+  #   sourcetype: syslog
+  # - path: /var/log/audit/audit.log
+  #   sourcetype: linux_audit

@@ -1,0 +1,4 @@
+---
+splunk_home: "/opt/splunkforwarder"
+splunk_user: "splunk"
+remove_data: true  # Set to false to keep /opt/splunkforwarder directory

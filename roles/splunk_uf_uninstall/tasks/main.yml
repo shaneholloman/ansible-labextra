@@ -1,0 +1,43 @@
+---
+- name: Stop Splunk Universal Forwarder service
+  ansible.builtin.service:
+    name: SplunkForwarder
+    state: stopped
+
+- name: Disable Splunk boot-start
+  ansible.builtin.command:
+    cmd: "{{ splunk_home }}/bin/splunk disable boot-start"
+  changed_when: true
+  when: ansible_facts.os_family == "RedHat"
+
+- name: Remove systemd unit file
+  ansible.builtin.file:
+    path: /etc/systemd/system/SplunkForwarder.service
+    state: absent
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Remove Splunk Universal Forwarder package
+  ansible.builtin.dnf:
+    name: splunkforwarder
+    state: absent
+
+- name: Remove Splunk home directory
+  ansible.builtin.file:
+    path: "{{ splunk_home }}"
+    state: absent
+  when: remove_data | bool
+
+- name: Remove splunk user
+  ansible.builtin.user:
+    name: "{{ splunk_user }}"
+    state: absent
+    remove: true
+  when: remove_data | bool
+
+- name: Remove init.d script if exists
+  ansible.builtin.file:
+    path: /etc/init.d/splunk
+    state: absent

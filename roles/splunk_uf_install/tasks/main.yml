@@ -1,0 +1,106 @@
+---
+- name: Download Splunk Universal Forwarder RPM
+  ansible.builtin.get_url:
+    url: "{{ splunk_download_url }}"
+    dest: "/tmp/splunkforwarder.rpm"
+    mode: '0644'
+    timeout: 300
+
+- name: Install Splunk Universal Forwarder
+  ansible.builtin.dnf:
+    name: "/tmp/splunkforwarder.rpm"
+    state: present
+    disable_gpg_check: true
+
+- name: Create splunk user
+  ansible.builtin.user:
+    name: "{{ splunk_user }}"
+    system: true
+    home: "{{ splunk_home }}"
+    shell: /bin/bash
+
+- name: Check if Splunk has been started before
+  ansible.builtin.stat:
+    path: "{{ splunk_home }}/etc/auth/splunk.secret"
+  register: splunk_secret
+
+- name: Accept Splunk license on first run
+  ansible.builtin.command:
+    cmd: "{{ splunk_home }}/bin/splunk start --accept-license --answer-yes --no-prompt"
+  become: true
+  become_user: "{{ splunk_user }}"
+  when: not splunk_secret.stat.exists
+  changed_when: true
+
+- name: Check if Splunk boot-start is already enabled
+  ansible.builtin.stat:
+    path: /etc/systemd/system/SplunkForwarder.service
+  register: splunk_systemd_unit
+
+- name: Enable Splunk to start at boot
+  ansible.builtin.command:
+    cmd: "{{ splunk_home }}/bin/splunk enable boot-start -user {{ splunk_user }}"
+  when: not splunk_systemd_unit.stat.exists
+  changed_when: true
+
+- name: Ensure system/local directory exists
+  ansible.builtin.file:
+    path: "{{ splunk_home }}/etc/system/local"
+    state: directory
+    owner: "{{ splunk_user }}"
+    group: "{{ splunk_user }}"
+    mode: '0755'
+
+- name: Configure forward server (outputs.conf)
+  ansible.builtin.copy:
+    dest: "{{ splunk_home }}/etc/system/local/outputs.conf"
+    owner: "{{ splunk_user }}"
+    group: "{{ splunk_user }}"
+    mode: '0644'
+    content: |
+      [tcpout]
+      defaultGroup = primary_indexers
+
+      [tcpout:primary_indexers]
+      server = {{ splunk_forward_server }}
+
+      [indexAndForward]
+      index = false
+  notify: Restart Splunk UF
+
+- name: Configure log monitoring (inputs.conf)
+  ansible.builtin.copy:
+    dest: "{{ splunk_home }}/etc/system/local/inputs.conf"
+    owner: "{{ splunk_user }}"
+    group: "{{ splunk_user }}"
+    mode: '0644'
+    content: |
+      {% for log in splunk_monitor_logs %}
+      [monitor://{{ log.path }}]
+      disabled = false
+      index = {{ splunk_index }}
+      sourcetype = {{ log.sourcetype }}
+      followTail = 1
+
+      {% endfor %}
+  notify: Restart Splunk UF
+
+- name: Ensure Splunk Universal Forwarder is running
+  ansible.builtin.service:
+    name: SplunkForwarder
+    state: started
+
+- name: Remove downloaded RPM file
+  ansible.builtin.file:
+    path: /tmp/splunkforwarder.rpm
+    state: absent
+
+- name: Check last line of /var/log/secure
+  ansible.builtin.command:
+    cmd: tail -n 1 /var/log/secure
+  register: secure_log_last_line
+  changed_when: false
+
+- name: Reboot VM to ensure logs are correct
+  ansible.builtin.reboot:
+  when: "'localhost' in secure_log_last_line.stdout"
