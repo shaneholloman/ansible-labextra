@@ -15,7 +15,7 @@ splunk_monitor_logs:
   - path: /var/log/secure
     sourcetype: linux_secure
   - path: /var/log/messages
-    sourcetype: linux_messages_syslog
+    sourcetype: rhel_messages_syslog
   # Uncomment to add more log sources:
   # - path: /var/log/audit/audit.log
   #   sourcetype: linux_audit
