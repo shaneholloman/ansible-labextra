@@ -84,6 +84,7 @@
       {% for log in splunk_monitor_logs %}
       [monitor://{{ log.path }}]
       disabled = false
+      host = {{ ansible_fqdn }}
       index = {{ splunk_index }}
       sourcetype = {{ log.sourcetype }}
       followTail = 1
