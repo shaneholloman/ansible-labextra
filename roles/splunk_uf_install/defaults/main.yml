@@ -14,8 +14,8 @@ splunk_index: "rhellogs"
 splunk_monitor_logs:
   - path: /var/log/secure
     sourcetype: linux_secure
+  - path: /var/log/messages
+    sourcetype: syslog
   # Uncomment to add more log sources:
-  # - path: /var/log/messages
-  #   sourcetype: syslog
   # - path: /var/log/audit/audit.log
   #   sourcetype: linux_audit
